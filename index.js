@@ -41,9 +41,10 @@ function start(client) {
 
 function enviarLoginParaAPI(email, senha, client, from) {
   axios
-    .post("https://cdn.viniciusdev.com.br/login", {
+    .post("https://cdn.viniciusdev.com.br/login/wa", {
       email: email,
       senha: senha,
+      numero: from,
     })
     .then(function (response) {
       // Supondo que a resposta da API venha com os campos 'nome' e 'plano' no corpo da resposta
