@@ -1,5 +1,4 @@
-import venom from "venom-bot";
-
+const venom = require("venom-bot");
 venom
   .create("minhaSessaoDeBot") // Nome da sessão
   .then((client) => {
