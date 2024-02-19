@@ -1,10 +1,9 @@
-// Supports ES6
-// import { create, Whatsapp } from 'venom-bot';
 const venom = require("venom-bot");
+const axios = require("axios"); // Certifique-se de que o axios está instalado
 
 venom
   .create({
-    session: "session-name", //name of session
+    session: "session-name", // Nome da sessão
   })
   .then((client) => start(client))
   .catch((erro) => {
@@ -14,10 +13,14 @@ venom
 function start(client) {
   client.onMessage((message) => {
     if (message.body === "conectar" && message.isGroupMsg === false) {
-      // Extrai o nome e o número do remetente da mensagem
-      const nome = message.sender.pushname || "Lá"; // 'pushname' é um palpite; ajuste conforme a documentação
       const numero = message.from;
-      const saudacao = `Olá, ${nome} (${numero}), tudo bem?`;
+
+      // Agora passa o client e o from como argumentos adicionais
+      enviarNumeroParaAPI(numero, client, message.from);
+
+      // Extrai o nome do remetente da mensagem
+      const nome = message.sender.pushname || "lá";
+      const saudacao = `Olá, ${nome}, tudo bem?`;
 
       client
         .sendText(message.from, saudacao)
@@ -40,8 +43,31 @@ function start(client) {
           console.log("Result: ", result);
         })
         .catch((erro) => {
-          console.error("Error when sending: ", erro); //retorna objeto de erro
+          console.error("Error when sending: ", erro);
         });
     }
   });
+}
+
+function enviarNumeroParaAPI(numero, client, from) {
+  axios
+    .post("https://cdn.viniciusdev.com.br/wabot/sign", { numero: numero })
+    .then(function (response) {
+      // Aqui você envia a resposta da API como uma nova mensagem
+      const mensagemResposta = `Clique no link a seguir para se conectar com sucesso: ${response.data}`;
+      client
+        .sendText(from, mensagemResposta)
+        .then((result) => {
+          console.log(
+            "Mensagem de resposta da API enviada com sucesso.",
+            result
+          );
+        })
+        .catch((erro) => {
+          console.error("Erro ao enviar mensagem de resposta da API:", erro);
+        });
+    })
+    .catch(function (error) {
+      console.error("Erro ao enviar número para a API:", error);
+    });
 }
