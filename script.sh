@@ -20,7 +20,7 @@ if [ "$alteracoes" != "Already up to date." ]; then
     # Deleta somente o chat server do PM2
     pm2 delete "BOT SERVER"
 
-    pm2 start --name "BOT SERVER" index.js -i max
+    pm2 start --name "BOT SERVER" index.js
     pm2 save
 
     # O comando npm start não é necessário se você já está usando pm2 para gerenciar os processos
