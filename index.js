@@ -1,25 +1,27 @@
+// Supports ES6
+// import { create, Whatsapp } from 'venom-bot';
 const venom = require("venom-bot");
+
 venom
-  .create("minhaSessaoDeBot") // Nome da sessão
-  .then((client) => {
-    client.onMessage((message) => {
-      if (message.body === "conectar" && !message.isGroupMsg) {
-        client
-          .sendText(message.from, "Olá, tudo bem?")
-          .then(() =>
-            client.sendText(
-              message.from,
-              "para vincular sua conta ao site https://servidor.viniciusdev.com.br acesse o link da próxima mensagem"
-            )
-          )
-          .then(() =>
-            client.sendText(
-              message.from,
-              "Fique à vontade para fazer perguntas."
-            )
-          )
-          .catch((error) => console.error("Erro ao enviar: ", error));
-      }
-    });
+  .create({
+    session: "session-name", //name of session
   })
-  .catch((error) => console.log(error));
+  .then((client) => start(client))
+  .catch((erro) => {
+    console.log(erro);
+  });
+
+function start(client) {
+  client.onMessage((message) => {
+    if (message.body === "Hi" && message.isGroupMsg === false) {
+      client
+        .sendText(message.from, "Welcome Venom 🕷")
+        .then((result) => {
+          console.log("Result: ", result); //return object success
+        })
+        .catch((erro) => {
+          console.error("Error when sending: ", erro); //return object error
+        });
+    }
+  });
+}
