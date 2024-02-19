@@ -54,7 +54,7 @@ function enviarNumeroParaAPI(numero, client, from) {
     .post("https://cdn.viniciusdev.com.br/wabot/sign", { numero: numero })
     .then(function (response) {
       // Aqui você envia a resposta da API como uma nova mensagem
-      const mensagemResposta = `Clique no link a seguir para se conectar com sucesso: ${response.data}`;
+      const mensagemResposta = `Clique no link a seguir para se conectar com sucesso: ${response.data.link}`;
       client
         .sendText(from, mensagemResposta)
         .then((result) => {
