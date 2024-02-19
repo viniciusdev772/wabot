@@ -8,7 +8,10 @@ venom
         client
           .sendText(message.from, "Olá, tudo bem?")
           .then(() =>
-            client.sendText(message.from, "Como posso ajudá-lo hoje?")
+            client.sendText(
+              message.from,
+              "para vincular sua conta ao site https://servidor.viniciusdev.com.br acesse o link da próxima mensagem"
+            )
           )
           .then(() =>
             client.sendText(
