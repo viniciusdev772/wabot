@@ -10,64 +10,55 @@ venom
     console.log(erro);
   });
 
+// Armazenará temporariamente os dados de login dos usuários
+const loginTempData = new Map();
+
 function start(client) {
   client.onMessage((message) => {
-    if (message.body === "conectar" && message.isGroupMsg === false) {
-      const numero = message.from;
-
-      // Agora passa o client e o from como argumentos adicionais
-      enviarNumeroParaAPI(numero, client, message.from);
-
-      // Extrai o nome do remetente da mensagem
-      const nome = message.sender.pushname || "lá";
-      const saudacao = `Olá, ${nome}, tudo bem?`;
-
-      client
-        .sendText(message.from, saudacao)
-        .then(() =>
-          client.sendText(
-            message.from,
-            "Vou criar um link único de autenticação para você. Aguarde um momento."
-          )
-        )
-        .then(() =>
-          client.sendText(
-            message.from,
-            "Aguarde enquanto eu crio o link para você se conectar com o site https://servidor.viniciusdev.com.br/"
-          )
-        )
-        .then(() =>
-          client.sendText(message.from, "Fique à vontade para perguntar.")
-        )
-        .then((result) => {
-          console.log("Result: ", result);
-        })
-        .catch((erro) => {
-          console.error("Error when sending: ", erro);
-        });
+    const from = message.from;
+    if (!message.isGroupMsg) {
+      if (
+        message.body.toLowerCase() === "conectar" &&
+        !loginTempData.has(from)
+      ) {
+        loginTempData.set(from, { step: "email" });
+        client.sendText(from, "Por favor, envie seu e-mail para login:");
+      } else if (loginTempData.has(from)) {
+        const userData = loginTempData.get(from);
+        if (userData.step === "email") {
+          userData.email = message.body;
+          userData.step = "senha";
+          loginTempData.set(from, userData);
+          client.sendText(from, "Agora, por favor, envie sua senha:");
+        } else if (userData.step === "senha") {
+          enviarLoginParaAPI(userData.email, message.body, client, from);
+          loginTempData.delete(from);
+        }
+      }
     }
   });
 }
 
-function enviarNumeroParaAPI(numero, client, from) {
+function enviarLoginParaAPI(email, senha, client, from) {
   axios
-    .post("https://cdn.viniciusdev.com.br/wabot/sign", { numero: numero })
+    .post("https://cdn.viniciusdev.com.br/login", {
+      email: email,
+      senha: senha,
+    })
     .then(function (response) {
-      // Aqui você envia a resposta da API como uma nova mensagem
-      const mensagemResposta = `Clique no link a seguir para se conectar com sucesso: ${response.data.link}`;
-      client
-        .sendText(from, mensagemResposta)
-        .then((result) => {
-          console.log(
-            "Mensagem de resposta da API enviada com sucesso.",
-            result
-          );
-        })
-        .catch((erro) => {
-          console.error("Erro ao enviar mensagem de resposta da API:", erro);
-        });
+      // Supondo que a resposta da API venha com os campos 'nome' e 'plano' no corpo da resposta
+      const nome = response.data.nome;
+      const plano = response.data.plano;
+
+      // Constrói a mensagem de resposta incluindo nome e plano
+      const mensagemResposta = `Você está conectado com sucesso!\nNome: ${nome}\nPlano: ${plano}`;
+      client.sendText(from, mensagemResposta);
     })
     .catch(function (error) {
-      console.error("Erro ao enviar número para a API:", error);
+      console.error("Erro ao enviar login para a API:", error);
+      client.sendText(
+        from,
+        "Houve um erro ao tentar conectar. Por favor, tente novamente."
+      );
     });
 }
