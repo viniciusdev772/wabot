@@ -1,4 +1,14 @@
 const venom = require("venom-bot");
+const fs = require("fs");
+const path = require("path");
+
+// Define o caminho do diretório onde os dados da sessão serão salvos
+const sessionDataPath = "./sessionData";
+
+// Verifica se o diretório existe. Se não, cria o diretório.
+if (!fs.existsSync(sessionDataPath)) {
+  fs.mkdirSync(sessionDataPath, { recursive: true });
+}
 
 venom
   .create({
@@ -6,7 +16,7 @@ venom
     useChrome: true, // Utiliza o Chrome em vez de Chromium
     headless: true, // Executa o navegador em segundo plano
     devtools: false, // Desabilita as ferramentas de desenvolvedor
-    dataPath: "./sessionData", // Caminho para salvar os dados da sessão
+    dataPath: sessionDataPath, // Caminho para salvar os dados da sessão
   })
   .then((client) => start(client))
   .catch((erro) => {
