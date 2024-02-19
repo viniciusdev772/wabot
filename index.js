@@ -14,12 +14,17 @@ venom
 function start(client) {
   client.onMessage((message) => {
     if (message.body === "conectar" && message.isGroupMsg === false) {
+      // Extrai o nome e o número do remetente da mensagem
+      const nome = message.sender.pushname || "Lá"; // 'pushname' é um palpite; ajuste conforme a documentação
+      const numero = message.from;
+      const saudacao = `Olá, ${nome} (${numero}), tudo bem?`;
+
       client
-        .sendText(message.from, "Olá, tudo bem?")
+        .sendText(message.from, saudacao)
         .then(() =>
           client.sendText(
             message.from,
-            "Vou criar um link unico de autenticação para você. Aguarde um momento."
+            "Vou criar um link único de autenticação para você. Aguarde um momento."
           )
         )
         .then(() =>
