@@ -79,9 +79,10 @@ async function listarArquivos(from, client) {
       let mensagemResposta = "Lista de arquivos:\n";
       arquivos.forEach((arquivo, index) => {
         const tamanhoMB = (parseInt(arquivo.size) / (1024 * 1024)).toFixed(2);
+        const linkDownload = `https://cdn.viniciusdev.com.br/download?token=${arquivo.short}`; // Adicionando link de download
         mensagemResposta += `${index + 1}. Nome: ${
           arquivo.nome
-        }, Tamanho: ${tamanhoMB} MB\n`;
+        }, Tamanho: ${tamanhoMB} MB, Download: ${linkDownload}\n`;
       });
       client.sendText(from, mensagemResposta);
       loginTempData.set(from, { step: "escolherArquivo", arquivos });
