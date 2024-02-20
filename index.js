@@ -56,31 +56,17 @@ async function listarArquivos(from, client) {
       { numero: from }
     );
 
-    if (response.data.valid && response.data.arquivos.length > 0) {
+    if (response.data.valid) {
       const arquivos = response.data.arquivos;
+      let mensagemResposta = "Lista de arquivos:\n";
 
-      // Processando cada arquivo individualmente para enviar um botão de download
-      arquivos.forEach(async (arquivo, index) => {
+      arquivos.forEach((arquivo) => {
         const tamanhoMB = (parseInt(arquivo.size) / (1024 * 1024)).toFixed(2); // Convertendo bytes para MB
         const linkDownload = `https://cdn.viniciusdev.com.br/download?token=${arquivo.short}`;
-        const mensagemResposta = `Nome: ${arquivo.nome}, Tamanho: ${tamanhoMB} MB`;
-
-        const botaoDownload = {
-          buttonId: `download_${index}`, // ID único para cada botão
-          buttonText: { displayText: "Baixar" },
-          type: 1,
-        };
-
-        // Envio de mensagem com botão de download para cada arquivo
-        await client.sendButtons(
-          from,
-          mensagemResposta,
-          [botaoDownload],
-          "Clique abaixo para baixar:"
-        );
+        mensagemResposta += `Nome: ${arquivo.nome}, Tamanho: ${tamanhoMB} MB\nDownload: ${linkDownload}\n\n`;
       });
-    } else if (response.data.valid && response.data.arquivos.length === 0) {
-      client.sendText(from, "Não há arquivos para listar.");
+
+      client.sendText(from, mensagemResposta);
     } else {
       client.sendText(
         from,
