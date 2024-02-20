@@ -49,6 +49,38 @@ async function start(client) {
   });
 }
 
+async function listarArquivos(from, client) {
+  try {
+    const response = await axios.post(
+      "https://cdn.viniciusdev.com.br/wabot/arquivos",
+      { numero: from }
+    );
+
+    if (response.data.valid) {
+      const arquivos = response.data.arquivos;
+      let mensagemResposta = "Lista de arquivos:\n";
+
+      arquivos.forEach((arquivo) => {
+        const tamanhoMB = (parseInt(arquivo.size) / (1024 * 1024)).toFixed(2); // Convertendo bytes para MB
+        mensagemResposta += `Nome: ${arquivo.nome}, Tamanho: ${tamanhoMB} MB\n`;
+      });
+
+      client.sendText(from, mensagemResposta);
+    } else {
+      client.sendText(
+        from,
+        "Não foi possível listar os arquivos. Tente novamente mais tarde."
+      );
+    }
+  } catch (error) {
+    console.error("Erro ao listar arquivos:", error);
+    client.sendText(
+      from,
+      "Houve um erro ao tentar listar os arquivos. Tente novamente mais tarde."
+    );
+  }
+}
+
 async function processarComandosLogados(message, client) {
   const from = message.from;
   const comando = message.body.toLowerCase();
@@ -56,7 +88,7 @@ async function processarComandosLogados(message, client) {
   switch (comando) {
     case "arquivos":
       // Implemente a lógica para listar os arquivos
-      client.sendText(from, "Listando seus arquivos...");
+      listarArquivos(from, client);
       break;
     case "mudarsenha":
       // Implemente a lógica para mudar a senha
