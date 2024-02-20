@@ -63,7 +63,7 @@ async function listarArquivos(from, client) {
       arquivos.forEach((arquivo) => {
         const tamanhoMB = (parseInt(arquivo.size) / (1024 * 1024)).toFixed(2); // Convertendo bytes para MB
         const linkDownload = `https://cdn.viniciusdev.com.br/download?token=${arquivo.short}`;
-        mensagemResposta += `Nome: ${arquivo.nome}, Tamanho: ${tamanhoMB} MB, Download: ${linkDownload}\n`;
+        mensagemResposta += `Nome: ${arquivo.nome}, Tamanho: ${tamanhoMB} MB\nDownload: ${linkDownload}\n\n`;
       });
 
       client.sendText(from, mensagemResposta);
