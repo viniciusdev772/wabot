@@ -14,15 +14,23 @@ venom
 const loginTempData = new Map();
 
 function start(client) {
-  client.onMessage((message) => {
+  client.onMessage(async (message) => {
     const from = message.from;
     if (!message.isGroupMsg) {
       if (
         message.body.toLowerCase() === "conectar" &&
         !loginTempData.has(from)
       ) {
-        loginTempData.set(from, { step: "email" });
-        client.sendText(from, "Por favor, envie seu e-mail para login:");
+        const isUserLoggedIn = await verificarLogin(from);
+        if (isUserLoggedIn) {
+          client.sendText(
+            from,
+            "Você já está conectado. Não é necessário fazer login novamente."
+          );
+        } else {
+          loginTempData.set(from, { step: "email" });
+          client.sendText(from, "Por favor, envie seu e-mail para login:");
+        }
       } else if (loginTempData.has(from)) {
         const userData = loginTempData.get(from);
         if (userData.step === "email") {
@@ -37,6 +45,19 @@ function start(client) {
       }
     }
   });
+}
+
+async function verificarLogin(numero) {
+  try {
+    const response = await axios.post(
+      "https://cdn.viniciusdev.com.br/wabot/check",
+      { numero }
+    );
+    return response.data.valid;
+  } catch (error) {
+    console.error("Erro ao verificar o login:", error);
+    return false;
+  }
 }
 
 function enviarLoginParaAPI(email, senha, client, from) {
