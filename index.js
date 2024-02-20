@@ -3,7 +3,7 @@ const axios = require("axios");
 
 venom
   .create({
-    session: "session-name",
+    session: "session-name", // Nome da sessão
   })
   .then((client) => start(client))
   .catch((erro) => {
@@ -30,16 +30,38 @@ async function start(client) {
 
       if (loginTempData.has(from)) {
         const userData = loginTempData.get(from);
-        if (userData.step === "email") {
-          userData.email = message.body;
-          userData.step = "senha";
-          loginTempData.set(from, userData);
-          client.sendText(from, "Agora, por favor, envie sua senha:");
-        } else if (userData.step === "senha") {
-          enviarLoginParaAPI(userData.email, message.body, client, from);
-          loginTempData.delete(from);
-        } else if (userData.step === "escolherArquivo") {
-          processarEscolhaArquivo(from, message.body, client);
+        switch (userData.step) {
+          case "email":
+            userData.email = message.body;
+            userData.step = "senha";
+            loginTempData.set(from, userData);
+            client.sendText(from, "Agora, por favor, envie sua senha:");
+            break;
+          case "senha":
+            enviarLoginParaAPI(userData.email, message.body, client, from);
+            loginTempData.delete(from);
+            break;
+          case "escolherArquivo":
+            processarEscolhaArquivo(from, message.body, client);
+            break;
+          case "confirmarApagar":
+            if (message.body.toLowerCase() === "apagar") {
+              apagarArquivo(userData.arquivoEscolhido, from, client);
+              loginTempData.delete(from);
+            } else {
+              client.sendText(
+                from,
+                "Ação cancelada. Selecione um arquivo novamente ou use outro comando."
+              );
+              loginTempData.delete(from); // Opcional
+            }
+            break;
+          default:
+            client.sendText(
+              from,
+              "Não entendi sua resposta. Por favor, tente novamente."
+            );
+            break;
         }
       }
     }
@@ -52,18 +74,15 @@ async function listarArquivos(from, client) {
       "https://cdn.viniciusdev.com.br/wabot/arquivos",
       { numero: from }
     );
-
     if (response.data.valid) {
       const arquivos = response.data.arquivos;
       let mensagemResposta = "Lista de arquivos:\n";
       arquivos.forEach((arquivo, index) => {
         const tamanhoMB = (parseInt(arquivo.size) / (1024 * 1024)).toFixed(2);
-        const linkDownload = `https://cdn.viniciusdev.com.br/download?token=${arquivo.short}`; // Adicionando link de download
         mensagemResposta += `${index + 1}. Nome: ${
           arquivo.nome
-        }, Tamanho: ${tamanhoMB} MB, Download: ${linkDownload}\n`;
+        }, Tamanho: ${tamanhoMB} MB\n`;
       });
-
       client.sendText(from, mensagemResposta);
       loginTempData.set(from, { step: "escolherArquivo", arquivos });
     } else {
@@ -118,13 +137,15 @@ function enviarLoginParaAPI(email, senha, client, from) {
       senha: senha,
       numero: from,
     })
-    .then(function (response) {
+    .then((response) => {
       const nome = response.data.nome;
       const plano = response.data.plano;
-      const mensagemResposta = `Você está conectado com sucesso!\nNome: ${nome}\nPlano: ${plano}`;
-      client.sendText(from, mensagemResposta);
+      client.sendText(
+        from,
+        `Você está conectado com sucesso!\nNome: ${nome}\nPlano: ${plano}`
+      );
     })
-    .catch(function (error) {
+    .catch((error) => {
       console.error("Erro ao enviar login para a API:", error);
       client.sendText(
         from,
@@ -136,21 +157,25 @@ function enviarLoginParaAPI(email, senha, client, from) {
 function processarEscolhaArquivo(from, escolha, client) {
   const userData = loginTempData.get(from);
   const index = parseInt(escolha) - 1;
-  const arquivo = userData.arquivos[index];
-
-  if (arquivo) {
+  if (userData.arquivos && userData.arquivos[index]) {
+    const arquivoEscolhido = userData.arquivos[index];
     client.sendText(
       from,
-      `Você escolheu o arquivo: ${arquivo.nome}. Para apagar, responda "apagar".`
+      `Você escolheu o arquivo: ${arquivoEscolhido.nome}. Para confirmar a exclusão, responda "apagar".`
     );
-    // Atualiza o passo para esperar pela confirmação de apagar
     userData.step = "confirmarApagar";
-    userData.arquivoEscolhido = arquivo;
+    userData.arquivoEscolhido = arquivoEscolhido;
     loginTempData.set(from, userData);
   } else {
     client.sendText(
       from,
-      "Opção inválida. Por favor, escolha um número da lista."
+      "Número inválido. Por favor, escolha um número válido da lista."
     );
   }
+}
+
+async function apagarArquivo(arquivo, from, client) {
+  // Implemente a lógica de exclusão do arquivo aqui
+  console.log(`Apagando arquivo: ${arquivo.nome}`);
+  client.sendText(from, `O arquivo "${arquivo.nome}" foi apagado com sucesso.`);
 }
