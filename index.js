@@ -13,25 +13,27 @@ venom
 // Armazenará temporariamente os dados de login dos usuários
 const loginTempData = new Map();
 
-function start(client) {
+async function start(client) {
   client.onMessage(async (message) => {
     const from = message.from;
     if (!message.isGroupMsg) {
-      if (
-        message.body.toLowerCase() === "conectar" &&
-        !loginTempData.has(from)
-      ) {
-        const isUserLoggedIn = await verificarLogin(from);
-        if (isUserLoggedIn) {
-          client.sendText(
-            from,
-            "Você já está conectado. Não é necessário fazer login novamente."
-          );
-        } else {
-          loginTempData.set(from, { step: "email" });
-          client.sendText(from, "Por favor, envie seu e-mail para login:");
-        }
-      } else if (loginTempData.has(from)) {
+      const isUserLoggedIn = await verificarLogin(from);
+      // Se a mensagem é "conectar" e o usuário não está logado
+      if (message.body.toLowerCase() === "conectar" && !isUserLoggedIn) {
+        loginTempData.set(from, { step: "email" });
+        client.sendText(from, "Por favor, envie seu e-mail para login:");
+        return; // Encerra a execução aqui
+      }
+
+      // Se o usuário está tentando executar um comando e está logado
+      if (isUserLoggedIn) {
+        // Processa comandos específicos para usuários logados
+        processarComandosLogados(message, client);
+        return; // Encerra a execução aqui
+      }
+
+      // Continua o processo de login se necessário
+      if (loginTempData.has(from)) {
         const userData = loginTempData.get(from);
         if (userData.step === "email") {
           userData.email = message.body;
@@ -45,6 +47,25 @@ function start(client) {
       }
     }
   });
+}
+
+async function processarComandosLogados(message, client) {
+  const from = message.from;
+  const comando = message.body.toLowerCase();
+
+  switch (comando) {
+    case "arquivos":
+      // Implemente a lógica para listar os arquivos
+      client.sendText(from, "Listando seus arquivos...");
+      break;
+    case "mudarsenha":
+      // Implemente a lógica para mudar a senha
+      client.sendText(from, "Por favor, envie a nova senha:");
+      loginTempData.set(from, { step: "mudarSenha" });
+      break;
+    default:
+      client.sendText(from, "Comando não reconhecido. Tente novamente.");
+  }
 }
 
 async function verificarLogin(numero) {
@@ -68,11 +89,8 @@ function enviarLoginParaAPI(email, senha, client, from) {
       numero: from,
     })
     .then(function (response) {
-      // Supondo que a resposta da API venha com os campos 'nome' e 'plano' no corpo da resposta
       const nome = response.data.nome;
       const plano = response.data.plano;
-
-      // Constrói a mensagem de resposta incluindo nome e plano
       const mensagemResposta = `Você está conectado com sucesso!\nNome: ${nome}\nPlano: ${plano}`;
       client.sendText(from, mensagemResposta);
     })
