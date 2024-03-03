@@ -17,7 +17,14 @@ async function start(client) {
     const from = message.from;
     if (!message.isGroupMsg) {
       const isUserLoggedIn = await verificarLogin(from);
-      if (message.body.toLowerCase() === "conectar" && !isUserLoggedIn) {
+      if (message.body.toLowerCase() === "conectar") {
+        if (isUserLoggedIn) {
+          client.sendText(
+            from,
+            "Você já está conectado. Use o comando 'arquivos' para listar seus arquivos."
+          );
+          return;
+        }
         loginTempData.set(from, { step: "email" });
         client.sendText(from, "Por favor, envie seu e-mail para login:");
         return;
