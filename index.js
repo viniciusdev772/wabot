@@ -141,7 +141,7 @@ async function processarComandosLogados(message, client) {
 
     // Salve o arquivo no servidor
     fs.writeFileSync(filePath, buffer);
-    sendFileToAPI(filePath, from);
+    sendFileToAPI(filePath, from, client);
   }
 
   switch (comando) {
@@ -162,8 +162,6 @@ async function processarComandosLogados(message, client) {
       client.sendText(from, "Por favor, envie a nova senha:");
       loginTempData.set(from, { step: "mudarSenha" });
       break;
-    default:
-      client.sendText(from, "Comando não reconhecido. Tente novamente.");
   }
 }
 
@@ -230,9 +228,16 @@ async function sendFileToAPI(filePath, numero) {
       }
     );
 
-    console.log("File successfully sent to the API:", response.data);
+    client.sendText(
+      from,
+      `O arquivo "${path.basename(filePath)}" foi enviado com sucesso.`
+    );
   } catch (error) {
-    console.error("Error sending the file to the API:", error.message);
+    console.error("Error sending file to API:", error);
+    client.sendText(
+      from,
+      "Houve um erro ao tentar enviar o arquivo. Por favor, tente novamente."
+    );
   }
 }
 
