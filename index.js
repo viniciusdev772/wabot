@@ -117,7 +117,12 @@ async function processarComandosLogados(message, client) {
 
   console.log(message);
 
-  if (messageType === "file") {
+  if (
+    messageType === "document" ||
+    messageType === "audio" ||
+    messageType === "video" ||
+    messageType === "image"
+  ) {
     const buffer = await client.decryptFile(message);
     console.log("Arquivo recebido:", message.filename);
   }
