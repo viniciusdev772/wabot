@@ -48,16 +48,7 @@ async function start(client) {
             enviarLoginParaAPI(userData.email, message.body, client, from);
             loginTempData.delete(from);
             break;
-          case "desconectar":
-            if (desconct(from)) {
-              client.sendText(from, "Você foi desconectado com sucesso!");
-            } else {
-              client.sendText(
-                from,
-                "Houve um erro ao tentar desconectar. Por favor, tente novamente."
-              );
-            }
-            break;
+
           case "escolherArquivo":
             processarEscolhaArquivo(from, message.body, client);
             break;
@@ -123,6 +114,16 @@ async function processarComandosLogados(message, client) {
   const comando = message.body.toLowerCase();
 
   switch (comando) {
+    case "desconectar":
+      if (desconct(from)) {
+        client.sendText(from, "Você foi desconectado com sucesso!");
+      } else {
+        client.sendText(
+          from,
+          "Houve um erro ao tentar desconectar. Por favor, tente novamente."
+        );
+      }
+      break;
     case "arquivos":
       listarArquivos(from, client);
       break;
