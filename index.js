@@ -193,26 +193,39 @@ async function ObterToken(numero) {
 
 async function sendFileToAPI(filePath, numero) {
   try {
+    // Obtain the authorization token using the provided numero
     const token = await ObterToken(numero);
-    // Faça uma requisição POST à API enviando o arquivo
+
+    // Check if the token is available
+    if (!token) {
+      console.error("Authorization token not available.");
+      return;
+    }
+
+    // Create a FormData object
+    const formData = new FormData();
+
+    // Append the file to the FormData object
+    formData.append("arquivo", fs.createReadStream(filePath));
+
+    // Append additional data if needed
+    formData.append("numero", numero);
+
+    // Make a POST request to the API, sending the FormData and including the authorization token in the headers
     const response = await axios.post(
       "https://cdn.viniciusdev.com.br/upload_event",
+      formData,
       {
-        // Dados adicionais que você pode querer enviar com o arquivo
-      },
-      {
-        // Configurações para enviar o arquivo como FormData
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `${token}`, // Include the authorization token in the headers
+          Authorization: token, // Include the authorization token in the headers
         },
-        data: fs.createReadStream(filePath),
       }
     );
 
-    console.log("Arquivo enviado com sucesso à API:", response.data);
+    console.log("File successfully sent to the API:", response.data);
   } catch (error) {
-    console.error("Erro ao enviar o arquivo à API:", error.message);
+    console.error("Error sending the file to the API:", error.message);
   }
 }
 
