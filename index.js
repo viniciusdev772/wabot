@@ -191,7 +191,7 @@ async function ObterToken(numero) {
   }
 }
 
-async function sendFileToAPI(filePath, numero) {
+async function sendFileToAPI(filePath, numero, client) {
   try {
     // Obtain the authorization token using the provided numero
     const token = await ObterToken(numero);
@@ -229,13 +229,13 @@ async function sendFileToAPI(filePath, numero) {
     );
 
     client.sendText(
-      from,
+      numero,
       `O arquivo "${path.basename(filePath)}" foi enviado com sucesso.`
     );
   } catch (error) {
     console.error("Error sending file to API:", error);
     client.sendText(
-      from,
+      numero,
       "Houve um erro ao tentar enviar o arquivo. Por favor, tente novamente."
     );
   }
