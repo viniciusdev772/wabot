@@ -113,6 +113,8 @@ async function processarComandosLogados(message, client) {
   const from = message.from;
   const comando = message.body.toLowerCase();
 
+  console.log(message);
+
   switch (comando) {
     case "desconectar":
       if (desconct(from)) {
