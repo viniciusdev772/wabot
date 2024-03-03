@@ -113,7 +113,14 @@ async function processarComandosLogados(message, client) {
   const from = message.from;
   const comando = message.body.toLowerCase();
 
+  const messageType = message.type;
+
   console.log(message);
+
+  if (messageType === "file") {
+    const buffer = await client.decryptFile(message);
+    console.log("Arquivo recebido:", message.filename);
+  }
 
   switch (comando) {
     case "desconectar":
