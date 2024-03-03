@@ -225,7 +225,7 @@ async function sendFileToAPI(filePath, numero) {
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`, // Include the authorization token in the headers
+          Authorization: token, // Include the authorization token in the headers
         },
       }
     );
