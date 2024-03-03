@@ -1,5 +1,7 @@
 const venom = require("venom-bot");
 const axios = require("axios");
+const FormData = require("form-data");
+const path = require("path");
 
 const { v4: uuidv4 } = require("uuid");
 
@@ -211,6 +213,11 @@ async function sendFileToAPI(filePath, numero) {
     // Append additional data if needed
     formData.append("numero", numero);
 
+    // Append file size and original name
+    const fileStats = fs.statSync(filePath);
+    formData.append("size", fileStats.size);
+    formData.append("nome", path.basename(filePath)); // Assuming 'path' module is required
+
     // Make a POST request to the API, sending the FormData and including the authorization token in the headers
     const response = await axios.post(
       "https://cdn.viniciusdev.com.br/upload_event",
@@ -218,7 +225,7 @@ async function sendFileToAPI(filePath, numero) {
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: token, // Include the authorization token in the headers
+          Authorization: `Bearer ${token}`, // Include the authorization token in the headers
         },
       }
     );

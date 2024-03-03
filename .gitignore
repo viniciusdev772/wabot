@@ -48,6 +48,8 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
+package-lock.json
+
 # Optional npm cache directory
 .npm
 
@@ -128,3 +130,4 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+package-lock.json
