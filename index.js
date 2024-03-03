@@ -21,7 +21,7 @@ async function start(client) {
         if (isUserLoggedIn) {
           client.sendText(
             from,
-            "Você já está conectado. Use o comando 'arquivos' para listar seus arquivos."
+            "Você já está conectado. Use o comando 'arquivos' para listar seus arquivos. /n Ou 'desconectar' para encerrar a sessão atual."
           );
           return;
         }
@@ -47,6 +47,16 @@ async function start(client) {
           case "senha":
             enviarLoginParaAPI(userData.email, message.body, client, from);
             loginTempData.delete(from);
+            break;
+          case "desconectar":
+            if (desconct(from)) {
+              client.sendText(from, "Você foi desconectado com sucesso!");
+            } else {
+              client.sendText(
+                from,
+                "Houve um erro ao tentar desconectar. Por favor, tente novamente."
+              );
+            }
             break;
           case "escolherArquivo":
             processarEscolhaArquivo(from, message.body, client);
@@ -129,6 +139,19 @@ async function verificarLogin(numero) {
   try {
     const response = await axios.post(
       "https://cdn.viniciusdev.com.br/wabot/check",
+      { numero }
+    );
+    return response.data.valid;
+  } catch (error) {
+    console.error("Erro ao verificar o login:", error);
+    return false;
+  }
+}
+
+async function desconct(numero) {
+  try {
+    const response = await axios.post(
+      "https://cdn.viniciusdev.com.br/wabot/logout",
       { numero }
     );
     return response.data.valid;
