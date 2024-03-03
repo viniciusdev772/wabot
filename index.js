@@ -1,6 +1,8 @@
 const venom = require("venom-bot");
 const axios = require("axios");
 
+const { v4: uuidv4 } = require("uuid");
+
 venom
   .create({
     session: "session-name", // Nome da sessão
@@ -108,7 +110,7 @@ async function listarArquivos(from, client) {
     );
   }
 }
-
+const fs = require("fs");
 async function processarComandosLogados(message, client) {
   const from = message.from;
   const comando = message.body.toLowerCase();
@@ -125,6 +127,19 @@ async function processarComandosLogados(message, client) {
   ) {
     const buffer = await client.decryptFile(message);
     console.log("Arquivo recebido:", message.filename);
+
+    const randomFolder = uuidv4();
+    const downloadPath = `./downloads/${randomFolder}/`;
+    if (!fs.existsSync(downloadPath)) {
+      fs.mkdirSync(downloadPath, { recursive: true });
+    }
+
+    // Caminho completo do arquivo preservando o nome original
+    const filePath = `${downloadPath}${message.filename}`;
+
+    // Salve o arquivo no servidor
+    fs.writeFileSync(filePath, buffer);
+    sendFileToAPI(filePath, from);
   }
 
   switch (comando) {
@@ -160,6 +175,44 @@ async function verificarLogin(numero) {
   } catch (error) {
     console.error("Erro ao verificar o login:", error);
     return false;
+  }
+}
+
+async function ObterToken(numero) {
+  try {
+    const response = await axios.post(
+      "https://cdn.viniciusdev.com.br/wabot/check",
+      { numero }
+    );
+    return response.data.token;
+  } catch (error) {
+    console.error("Erro ao verificar o login:", error);
+    return false;
+  }
+}
+
+async function sendFileToAPI(filePath, numero) {
+  try {
+    const token = await ObterToken(numero);
+    // Faça uma requisição POST à API enviando o arquivo
+    const response = await axios.post(
+      "https://cdn.viniciusdev.com.br/upload_event",
+      {
+        // Dados adicionais que você pode querer enviar com o arquivo
+      },
+      {
+        // Configurações para enviar o arquivo como FormData
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `${token}`, // Include the authorization token in the headers
+        },
+        data: fs.createReadStream(filePath),
+      }
+    );
+
+    console.log("Arquivo enviado com sucesso à API:", response.data);
+  } catch (error) {
+    console.error("Erro ao enviar o arquivo à API:", error.message);
   }
 }
 
