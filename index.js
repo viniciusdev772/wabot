@@ -2,60 +2,32 @@ const venom = require("venom-bot");
 const axios = require("axios");
 const FormData = require("form-data");
 const path = require("path");
-
+const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
+
+const userTempData = new Map();
 
 venom
   .create({
     session: "session-name", // Nome da sessão
   })
   .then((client) => start(client))
-  .catch((erro) => {
-    console.log(erro);
+  .catch((error) => {
+    console.log(error);
   });
-
-const loginTempData = new Map();
 
 async function start(client) {
   client.onMessage(async (message) => {
     const from = message.from;
     if (!message.isGroupMsg) {
       const isUserLoggedIn = await verificarLogin(from);
-      if (message.body.toLowerCase() === "conectar") {
-        if (isUserLoggedIn) {
-          client.sendText(
-            from,
-            "Você já está conectado. Use o comando 'arquivos' para listar seus arquivos. /n Ou 'desconectar' para encerrar a sessão atual."
-          );
-          return;
-        }
-        loginTempData.set(from, { step: "email" });
-        client.sendText(from, "Por favor, envie seu e-mail para login:");
-        return;
-      }
 
-      if (isUserLoggedIn) {
-        processarComandosLogados(message, client);
-        return;
-      }
+      if (userTempData.has(from)) {
+        const userData = userTempData.get(from);
 
-      if (loginTempData.has(from)) {
-        const userData = loginTempData.get(from);
         switch (userData.step) {
-          case "email":
-            userData.email = message.body;
-            userData.step = "senha";
-            loginTempData.set(from, userData);
-            client.sendText(from, "Agora, por favor, envie sua senha:");
-            break;
-          case "senha":
-            enviarLoginParaAPI(userData.email, message.body, client, from);
-            loginTempData.delete(from);
-            break;
-
           case "escolherArquivo":
             if (isUserLoggedIn) {
-              // Add a check for login status
               processarEscolhaArquivo(from, message.body, client);
             } else {
               client.sendText(
@@ -65,15 +37,23 @@ async function start(client) {
             }
             break;
           case "confirmarApagar":
-            if (message.body.toLowerCase() === "apagar") {
-              apagarArquivo(userData.arquivoEscolhido, from, client);
-              loginTempData.delete(from);
+            if (isUserLoggedIn) {
+              if (message.body.toLowerCase() === "apagar") {
+                apagarArquivo(userData.arquivoEscolhido, from, client);
+                userTempData.delete(from);
+              } else {
+                client.sendText(
+                  from,
+                  "Ação cancelada. Selecione um arquivo novamente ou use outro comando."
+                );
+                userTempData.delete(from);
+              }
             } else {
               client.sendText(
                 from,
-                "Ação cancelada. Selecione um arquivo novamente ou use outro comando."
+                "Você precisa estar conectado para confirmar a exclusão. Use o comando 'conectar' para fazer login."
               );
-              loginTempData.delete(from); // Opcional
+              userTempData.delete(from);
             }
             break;
           default:
@@ -83,9 +63,35 @@ async function start(client) {
             );
             break;
         }
+      } else {
+        processNonLoginCommands(message, client);
       }
     }
   });
+}
+
+async function processNonLoginCommands(message, client) {
+  const from = message.from;
+  const isUserLoggedIn = await verificarLogin(from);
+
+  if (!isUserLoggedIn) {
+    const comando = message.body.toLowerCase();
+
+    switch (comando) {
+      case "conectar":
+        client.sendText(from, "Por favor, envie seu e-mail para login:");
+        userTempData.set(from, { step: "email" });
+        break;
+      default:
+        client.sendText(
+          from,
+          "Você precisa estar conectado. Use o comando 'conectar' para fazer login."
+        );
+        break;
+    }
+  } else {
+    processarComandosLogados(message, client);
+  }
 }
 
 async function listarArquivos(from, client) {
@@ -105,7 +111,7 @@ async function listarArquivos(from, client) {
         }, Tamanho: ${tamanhoMB} MB, Download: ${linkDownload}\n`;
       });
       client.sendText(from, mensagemResposta);
-      loginTempData.set(from, { step: "escolherArquivo", arquivos });
+      userTempData.set(from, { step: "escolherArquivo", arquivos });
     } else {
       client.sendText(
         from,
@@ -120,11 +126,10 @@ async function listarArquivos(from, client) {
     );
   }
 }
-const fs = require("fs");
+
 async function processarComandosLogados(message, client) {
   const from = message.from;
   const comando = message.body.toLowerCase();
-
   const messageType = message.type;
 
   console.log(message);
@@ -144,17 +149,14 @@ async function processarComandosLogados(message, client) {
       fs.mkdirSync(downloadPath, { recursive: true });
     }
 
-    // Caminho completo do arquivo preservando o nome original
     const filePath = `${downloadPath}${message.filename}`;
-
-    // Salve o arquivo no servidor
     fs.writeFileSync(filePath, buffer);
     sendFileToAPI(filePath, from, client);
   }
 
   switch (comando) {
     case "desconectar":
-      if (desconct(from)) {
+      if (await desconct(from)) {
         client.sendText(from, "Você foi desconectado com sucesso!");
       } else {
         client.sendText(
@@ -168,7 +170,7 @@ async function processarComandosLogados(message, client) {
       break;
     case "mudarsenha":
       client.sendText(from, "Por favor, envie a nova senha:");
-      loginTempData.set(from, { step: "mudarSenha" });
+      userTempData.set(from, { step: "mudarSenha" });
       break;
   }
 }
@@ -201,37 +203,28 @@ async function ObterToken(numero) {
 
 async function sendFileToAPI(filePath, numero, client) {
   try {
-    // Obtain the authorization token using the provided numero
     const token = await ObterToken(numero);
 
-    // Check if the token is available
     if (!token) {
       console.error("Authorization token not available.");
       return;
     }
 
-    // Create a FormData object
     const formData = new FormData();
-
-    // Append the file to the FormData object
     formData.append("arquivo", fs.createReadStream(filePath));
-
-    // Append additional data if needed
     formData.append("numero", numero);
 
-    // Append file size and original name
     const fileStats = fs.statSync(filePath);
     formData.append("size", fileStats.size);
-    formData.append("nome", path.basename(filePath)); // Assuming 'path' module is required
+    formData.append("nome", path.basename(filePath));
 
-    // Make a POST request to the API, sending the FormData and including the authorization token in the headers
     const response = await axios.post(
       "https://cdn.viniciusdev.com.br/upload_event",
       formData,
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: token, // Include the authorization token in the headers
+          Authorization: token,
         },
       }
     );
@@ -287,17 +280,19 @@ function enviarLoginParaAPI(email, senha, client, from) {
 }
 
 function processarEscolhaArquivo(from, escolha, client) {
-  const userData = loginTempData.get(from);
+  const userData = userTempData.get(from);
+  const arquivos = userData.arquivos;
   const index = parseInt(escolha) - 1;
-  if (userData.arquivos && userData.arquivos[index]) {
-    const arquivoEscolhido = userData.arquivos[index];
+
+  if (arquivos && arquivos[index]) {
+    const arquivoEscolhido = arquivos[index];
     client.sendText(
       from,
       `Você escolheu o arquivo: ${arquivoEscolhido.nome}. Para confirmar a exclusão, responda "apagar".`
     );
     userData.step = "confirmarApagar";
     userData.arquivoEscolhido = arquivoEscolhido;
-    loginTempData.set(from, userData);
+    userTempData.set(from, userData);
   } else {
     client.sendText(
       from,
@@ -307,7 +302,8 @@ function processarEscolhaArquivo(from, escolha, client) {
 }
 
 async function apagarArquivo(arquivo, from, client) {
-  // Implemente a lógica de exclusão do arquivo aqui
   console.log(`Apagando arquivo: ${arquivo.nome}`);
   client.sendText(from, `O arquivo "${arquivo.nome}" foi apagado com sucesso.`);
 }
+
+// ... (existing code)
