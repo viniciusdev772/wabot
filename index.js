@@ -54,7 +54,15 @@ async function start(client) {
             break;
 
           case "escolherArquivo":
-            processarEscolhaArquivo(from, message.body, client);
+            if (isUserLoggedIn) {
+              // Add a check for login status
+              processarEscolhaArquivo(from, message.body, client);
+            } else {
+              client.sendText(
+                from,
+                "Você precisa estar conectado para escolher um arquivo. Use o comando 'conectar' para fazer login."
+              );
+            }
             break;
           case "confirmarApagar":
             if (message.body.toLowerCase() === "apagar") {
