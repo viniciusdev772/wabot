@@ -284,7 +284,14 @@ function processarEscolhaArquivo(from, escolha, client) {
   const arquivos = userData.arquivos;
   const index = parseInt(escolha) - 1;
 
-  if (arquivos && arquivos[index]) {
+  if (Number.isNaN(index) || index < 0 || index >= arquivos.length) {
+    client.sendText(
+      from,
+      "Seleção de arquivo cancelada. Por favor, escolha um número válido da lista."
+    );
+    // Cancel the file selection and clear user data
+    userTempData.delete(from);
+  } else {
     const arquivoEscolhido = arquivos[index];
     client.sendText(
       from,
@@ -293,11 +300,6 @@ function processarEscolhaArquivo(from, escolha, client) {
     userData.step = "confirmarApagar";
     userData.arquivoEscolhido = arquivoEscolhido;
     userTempData.set(from, userData);
-  } else {
-    client.sendText(
-      from,
-      "Número inválido. Por favor, escolha um número válido da lista."
-    );
   }
 }
 
